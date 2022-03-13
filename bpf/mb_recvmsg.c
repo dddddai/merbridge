@@ -37,7 +37,7 @@ __section("cgroup/recvmsg4") int mb_recvmsg4(struct bpf_sock_addr *ctx)
         if (origin) {
             ctx->user_port = origin->port;
             ctx->user_ip4 = origin->ip;
-            debugf("successfully deal DNS redirect query");
+            debugf("dwq %d", bpf_htons(origin->port));
         } else {
             printk("failed get origin");
         }

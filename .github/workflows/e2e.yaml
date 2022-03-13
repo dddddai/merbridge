@@ -1,18 +1,14 @@
 name: E2E CI
 
 on:
-  # push:
-  #   branches: [ main, test ]
+  push:
   pull_request:
-    branches: [ main, test ]
-    types:
-      - '*'
 
 jobs:
   istio-e2e:
     runs-on: ubuntu-20.04
     timeout-minutes: 30
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'needs-e2e-test') }}
+    #if: ${{ contains(github.event.pull_request.labels.*.name, 'needs-e2e-test') }}
     env: 
       ISTIO_VERSION: '1.12.2'
       KIND_VERSION: v0.11.1
@@ -72,5 +68,5 @@ jobs:
         # check if eBPF works
         [ "$(sudo cat /tmp/trace-log | grep 'from user container')" = "" ] && (echo eBPF progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 11)
         [ "$(sudo cat /tmp/trace-log | grep 'bytes with eBPF successfully')" = "" ] && (echo eBPF redirect progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 12)
-        [ "$(sudo cat /tmp/trace-log | grep 'successfully deal DNS redirect query')" = "" ] && (echo DNS Proxy not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 13)
+        [ "$(sudo cat /tmp/trace-log | grep 'dwq 53')" = "" ] && (echo DNS Proxy not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 13)
         sudo rm -f /tmp/trace-log
