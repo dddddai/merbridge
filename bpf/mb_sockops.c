@@ -59,7 +59,7 @@ static inline int sockops_ipv4(struct bpf_sock_ops *skops)
         bpf_map_update_elem(&pair_original_dst, &p, &dd, BPF_ANY);
         bpf_sock_hash_update(skops, &sock_pair_map, &p, BPF_NOEXIST);
     } else {
-        if (skops->local_port == OUT_REDIRECT_PORT ||
+        if (skops->local_port ==  OUT_REDIRECT_PORT ||
             skops->local_port == IN_REDIRECT_PORT ||
             skops->remote_ip4 == 100663423) {
             bpf_sock_hash_update(skops, &sock_pair_map, &p, BPF_NOEXIST);
@@ -75,8 +75,12 @@ __section("sockops") int mb_sockops(struct bpf_sock_ops *skops)
     op = skops->op;
     port = skops->remote_port >> 16;
 
-    if (port == bpf_htons(DNS_CAPTURE_PORT)){
+    if (port == bpf_htons (DNS_CAPTURE_PORT)){
         debugf("udp catched, op: %d", op);
+    }
+
+    if (port == bpf_htons(OUT_REDIRECT_PORT)){
+        debugf("tcp catched, op: %d", op);
     }
 
     switch (op) {
