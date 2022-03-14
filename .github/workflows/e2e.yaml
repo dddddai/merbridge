@@ -68,5 +68,5 @@ jobs:
         # check if eBPF works
         [ "$(sudo cat /tmp/trace-log | grep 'from user container')" = "" ] && (echo eBPF progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 11)
         [ "$(sudo cat /tmp/trace-log | grep 'bytes with eBPF successfully')" = "" ] && (echo eBPF redirect progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 12)
-        [ "$(sudo cat /tmp/trace-log | grep 'dwq 53')" = "" ] && (echo DNS Proxy not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 13)
+        [ "$(sudo cat /tmp/trace-log | grep 'udp catched')" = "" ] && (echo DNS Proxy not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 13)
         sudo rm -f /tmp/trace-log
