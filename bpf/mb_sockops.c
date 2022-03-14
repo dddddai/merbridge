@@ -73,7 +73,7 @@ __section("sockops") int mb_sockops(struct bpf_sock_ops *skops)
     __u32 family, op, port;
     family = skops->family;
     op = skops->op;
-    port = skops->remote_port;
+    port = skops->remote_port >> 16;
 
     if (port == bpf_htons(DNS_CAPTURE_PORT)){
         debugf("udp catched, op: %d", op);
