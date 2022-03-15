@@ -32,7 +32,7 @@ static inline int sockops_ipv4(struct bpf_sock_ops *skops)
     void *dst = bpf_map_lookup_elem(&cookie_original_dst, &cookie);
     if (dst) {
         debugf("zhudong ip: {%d, %d}", skops->local_ip4, skops->remote_ip4);
-        debugf("zhudong port: {%d, %d}", bpf_htonl(skops->local_port), bpf_htonl(skops->remote_port));
+        debugf("zhudong port: {%d, %d}", skops->local_port, bpf_htonl(skops->remote_port));
         struct origin_info dd = *(struct origin_info *)dst;
         if (!(dd.flags & 1)) {
             __u32 pid = dd.pid;
@@ -65,9 +65,9 @@ static inline int sockops_ipv4(struct bpf_sock_ops *skops)
             skops->local_port == IN_REDIRECT_PORT ||
             skops->remote_ip4 == 100663423) {
             bpf_sock_hash_update(skops, &sock_pair_map, &p, BPF_NOEXIST);
+            debugf("beidong ip: {%d, %d}", skops->local_ip4, skops->remote_ip4);
+            debugf("beidong port: {%d, %d}", skops->local_port, bpf_htonl(skops->remote_port));
         }
-        debugf("beidong ip: {%d, %d}", skops->local_ip4, skops->remote_ip4);
-        debugf("beidong port: {%d, %d}", bpf_htonl(skops->local_port), bpf_htonl(skops->remote_port));
     }
     return 0;
 }
@@ -79,7 +79,7 @@ __section("sockops") int mb_sockops(struct bpf_sock_ops *skops)
     op = skops->op;
     port = skops->remote_port >> 16;
 
-    if (port == bpf_htons (DNS_CAPTURE_PORT)){
+    if (port == bpf_htons(DNS_CAPTURE_PORT)){
         debugf("udp catched, op: %d", op);
     }
 
