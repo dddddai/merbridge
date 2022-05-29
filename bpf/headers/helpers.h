@@ -16,6 +16,7 @@ limitations under the License.
 #pragma once
 #include <linux/bpf.h>
 #include <linux/bpf_common.h>
+#include <linux/in.h>
 #include <linux/swab.h>
 #include <linux/types.h>
 
@@ -59,9 +60,14 @@ static void *(*bpf_map_lookup_elem)(struct bpf_map *map, const void *key) =
 static __u64 (*bpf_map_update_elem)(struct bpf_map *map, const void *key,
                                     const void *value, __u64 flags) = (void *)
     BPF_FUNC_map_update_elem;
+static __u64 (*bpf_map_delete_elem)(struct bpf_map *map, const void *key) =
+    (void *)BPF_FUNC_map_delete_elem;
 static struct bpf_sock *(*bpf_sk_lookup_tcp)(
     void *ctx, struct bpf_sock_tuple *tuple, __u32 tuple_size, __u64 netns,
     __u64 flags) = (void *)BPF_FUNC_sk_lookup_tcp;
+static struct bpf_sock *(*bpf_sk_lookup_udp)(
+    void *ctx, struct bpf_sock_tuple *tuple, __u32 tuple_size, __u64 netns,
+    __u64 flags) = (void *)BPF_FUNC_sk_lookup_udp;
 static long (*bpf_sk_release)(struct bpf_sock *sock) = (void *)
     BPF_FUNC_sk_release;
 static long (*bpf_sock_hash_update)(
@@ -70,6 +76,8 @@ static long (*bpf_sock_hash_update)(
 static long (*bpf_msg_redirect_hash)(struct sk_msg_md *md, struct bpf_map *map,
                                      void *key, __u64 flags) = (void *)
     BPF_FUNC_msg_redirect_hash;
+static long (*bpf_bind)(struct bpf_sock_addr *ctx, struct sockaddr_in *addr,
+                        int addr_len) = (void *)BPF_FUNC_bind;
 
 #ifdef PRINTNL
 #define PRINT_SUFFIX "\n"
@@ -100,16 +108,27 @@ static long (*bpf_msg_redirect_hash)(struct sk_msg_md *md, struct bpf_map *map,
 
 #endif
 
-static inline int is_port_listen_current_ns(void *ctx, __u16 port)
+static inline int is_port_listen_current_ns(void *ctx, __u32 ip, __u16 port)
 {
 
     struct bpf_sock_tuple tuple = {};
-    // memset(&tuple.ipv4.sport, 0, sizeof(tuple.ipv4.sport));
-    // tuple.ipv4.saddr = 0;
-    // tuple.ipv4.sport = 0;
-    // tuple.ipv4.daddr = 0;
     tuple.ipv4.dport = bpf_htons(port);
+    tuple.ipv4.daddr = bpf_htonl(ip);
     struct bpf_sock *s = bpf_sk_lookup_tcp(ctx, &tuple, sizeof(tuple.ipv4),
+                                           BPF_F_CURRENT_NETNS, 0);
+    if (s) {
+        bpf_sk_release(s);
+        return 1;
+    }
+    return 0;
+}
+
+static inline int is_port_listen_udp_current_ns(void *ctx, __u32 ip, __u16 port)
+{
+    struct bpf_sock_tuple tuple = {};
+    tuple.ipv4.dport = bpf_htons(port);
+    tuple.ipv4.daddr = bpf_htonl(ip);
+    struct bpf_sock *s = bpf_sk_lookup_udp(ctx, &tuple, sizeof(tuple.ipv4),
                                            BPF_F_CURRENT_NETNS, 0);
     if (s) {
         bpf_sk_release(s);
@@ -132,3 +151,80 @@ struct pair {
     __u16 sport;
     __u16 dport;
 };
+
+#define MAX_ITEM_LEN 10
+
+struct cidr {
+    __u32 net; // network order
+    __u8 mask;
+    __u8 __pad[3];
+};
+
+static inline int is_in_cidr(struct cidr *c, __u32 ip)
+{
+    return (bpf_htonl(c->net) >> (32 - c->mask)) ==
+           bpf_htonl(ip) >> (32 - c->mask);
+}
+
+struct pod_config {
+    __u16 status_port;
+    __u16 __pad;
+    struct cidr exclude_out_ranges[MAX_ITEM_LEN];
+    struct cidr include_out_ranges[MAX_ITEM_LEN];
+    __u16 include_in_ports[MAX_ITEM_LEN];
+    __u16 include_out_ports[MAX_ITEM_LEN];
+    __u16 exclude_in_ports[MAX_ITEM_LEN];
+    __u16 exclude_out_ports[MAX_ITEM_LEN];
+};
+
+#define IS_EXCLUDE_PORT(ITEM, PORT, RET)                                       \
+    do {                                                                       \
+        *RET = 0;                                                              \
+        for (int i = 0; i < MAX_ITEM_LEN && ITEM[i] != 0; i++) {               \
+            if (bpf_htons(PORT) == ITEM[i]) {                                  \
+                *RET = 1;                                                      \
+                break;                                                         \
+            }                                                                  \
+        }                                                                      \
+    } while (0);
+
+#define IS_EXCLUDE_IPRANGES(ITEM, IP, RET)                                     \
+    do {                                                                       \
+        *RET = 0;                                                              \
+        for (int i = 0; i < MAX_ITEM_LEN && ITEM[i].net != 0; i++) {           \
+            if (is_in_cidr(&ITEM[i], IP)) {                                    \
+                *RET = 1;                                                      \
+                break;                                                         \
+            }                                                                  \
+        }                                                                      \
+    } while (0);
+
+#define IS_INCLUDE_PORT(ITEM, PORT, RET)                                       \
+    do {                                                                       \
+        *RET = 0;                                                              \
+        if (ITEM[0] != 0) {                                                    \
+            for (int i = 0; i < MAX_ITEM_LEN && ITEM[i] != 0; i++) {           \
+                if (bpf_htons(PORT) == ITEM[i]) {                              \
+                    *RET = 1;                                                  \
+                    break;                                                     \
+                }                                                              \
+            }                                                                  \
+        } else {                                                               \
+            *RET = 1;                                                          \
+        }                                                                      \
+    } while (0);
+
+#define IS_INCLUDE_IPRANGES(ITEM, IP, RET)                                     \
+    do {                                                                       \
+        *RET = 0;                                                              \
+        if (ITEM[0].net != 0) {                                                \
+            for (int i = 0; i < MAX_ITEM_LEN && ITEM[i].net != 0; i++) {       \
+                if (is_in_cidr(&ITEM[i], IP)) {                                \
+                    *RET = 1;                                                  \
+                    break;                                                     \
+                }                                                              \
+            }                                                                  \
+        } else {                                                               \
+            *RET = 1;                                                          \
+        }                                                                      \
+    } while (0);

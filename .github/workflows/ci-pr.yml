@@ -3,25 +3,21 @@ name: Merbridge CI
 on:
   push:
     branches: [ main, test ]
-    paths-ignore:
-      - '.ci/**'
-      - 'docs/**'
-      - '**/*.md'
   pull_request:
     branches: [ main, test ]
-    paths-ignore:
-      - '.ci/**'
-      - 'docs/**'
-      - '**/*.md'
 
 jobs:
   style-check:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2      
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.17
     - name: golangci-lint
       if: github.event_name == 'pull_request'
-      uses: golangci/golangci-lint-action@v2
+      uses: golangci/golangci-lint-action@v3
       with:
         # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
         version: v1.29
@@ -35,18 +31,26 @@ jobs:
     runs-on: ubuntu-20.04
     needs: [style-check]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.17
     - name: Test
-      run: go test -v ./...
+      run: go test -v -coverprofile=coverage.txt ./...
+    - uses: codecov/codecov-action@v3.1.0
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+        files: ./coverage.txt # optional
+        flags: unittests # optional
+        name: codecov-umbrella # optional
+        fail_ci_if_error: true # optional (default = false)
+        verbose: true # optional (default = false)
   compile-ebpf-test:
     runs-on: ubuntu-20.04
     needs: [style-check]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: make
       run: make compile
   docker-build:
@@ -55,7 +59,7 @@ jobs:
     if: github.ref_name == 'main'
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx

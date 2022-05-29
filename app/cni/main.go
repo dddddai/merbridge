@@ -13,30 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package ebpfs
+package main
 
 import (
 	"fmt"
 
-	"github.com/cilium/ebpf"
+	"github.com/containernetworking/cni/pkg/skel"
+	"github.com/containernetworking/cni/pkg/version"
 
-	"github.com/merbridge/merbridge/config"
+	"github.com/merbridge/merbridge/pkg/cniplugin"
 )
 
-var EbpfLoadPinnedMap *ebpf.Map
-
-func InitLoadPinnedMap() error {
-	var err error
-	if err = LoadMBProgs(config.Mode, config.UseReconnect, config.Debug); err != nil {
-		return err
-	}
-	EbpfLoadPinnedMap, err = ebpf.LoadPinnedMap(config.LocalPodIps, &ebpf.LoadPinOptions{})
-	if err != nil {
-		return fmt.Errorf("load map error: %v", err)
-	}
-	return nil
-}
-
-func GetPinnedMap() *ebpf.Map {
-	return EbpfLoadPinnedMap
+func main() {
+	skel.PluginMain(cniplugin.CmdAdd, cniplugin.CmdCheck, cniplugin.CmdDelete, version.All,
+		fmt.Sprintf("CNI plugin merbridge-cni %v", "0.5.0"))
 }
