@@ -50,6 +50,7 @@ static __always_inline __u16 csum_diff4(__u32 from, __u32 to, __u16 csum)
 
 __section("xdp") int mb_xdp(struct xdp_md *ctx)
 {
+    debugf("dwq xdp got");
     void *data = (void *)(long)ctx->data;
     void *data_end = (void *)(long)ctx->data_end;
     struct ethhdr *eth = (struct ethhdr *)data;
