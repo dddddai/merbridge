@@ -74,6 +74,7 @@ init-cgroup:
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(MACROS) -c $< -o $@
+	sudo bpftool btf dump file $@
 
 generate-compilation-database:
 	CC="$(CC)" CFLAGS="$(CFLAGS)" MACROS="$(MACROS)" scripts/generate-compilation-database.sh | tee compile_commands.json
@@ -127,7 +128,7 @@ clean-redir:
 	sudo rm $(PROG_MOUNT_PATH)/redir
 
 load-connect: load-map-cookie_original_dst load-map-local_pod_ips load-map-process_ip
-	sudo bpftool prog loadall mb_connect.o $(PROG_MOUNT_PATH)/connect \
+	sudo bpftool -d prog loadall mb_connect.o $(PROG_MOUNT_PATH)/connect \
 		map name cookie_original_dst pinned $(PROG_MOUNT_PATH)/cookie_original_dst \
 		map name local_pod_ips pinned $(PROG_MOUNT_PATH)/local_pod_ips \
 		map name process_ip pinned $(PROG_MOUNT_PATH)/process_ip

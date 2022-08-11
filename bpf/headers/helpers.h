@@ -166,9 +166,9 @@ static inline int is_port_listen_udp_current_ns(void *ctx, __u32 ip, __u16 port)
 #endif
 
 #if ENABLE_IPV6
-static __u32 ip_zero6[4] = {0, 0, 0, 0};
+static const __u32 ip_zero6[4] = {0, 0, 0, 0};
 // ::1 (network order)
-static __u32 localhost6[4] = {0, 0, 0, 1 << 24};
+static const __u32 localhost6[4] = {0, 0, 0, 1 << 24};
 
 static inline void set_ipv6(__u32 *dst, __u32 *src)
 {
