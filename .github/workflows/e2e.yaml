@@ -26,51 +26,51 @@ jobs:
     - name: install bpftool
       run: |
         sudo bash ./scripts/build-bpftool.sh
-    - name: setup kind cluster
-      run: |
-        ./scripts/setup-kind.sh
+    # - name: setup kind cluster
+    #   run: |
+    #     ./scripts/setup-kind.sh
     - name: try load and unload
       run: |
         uname -a
         make load
         make clean
-    - name: install istio
-      run: |
-        cat > /tmp/istio-config <<EOF
-        apiVersion: install.istio.io/v1alpha1
-        kind: IstioOperator
-        spec:
-          meshConfig:
-            defaultConfig:
-              proxyMetadata:
-                # Enable basic DNS proxying
-                ISTIO_META_DNS_CAPTURE: "true"
-                # Enable automatic address allocation, optional
-                ISTIO_META_DNS_AUTO_ALLOCATE: "true"
-        EOF
-        bash ./scripts/install-istio.sh -f /tmp/istio-config
-        rm -f /tmp/istio-config
-    - name: deploy test apps
-      run: |
-        kubectl label ns default istio-injection=enabled
-        kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/sleep/sleep.yaml
-        kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/helloworld/helloworld.yaml
-        while true; do [ "$(kubectl get po -l app=sleep | grep '2/2')" = "" ] || break && (echo waiting for sleep app ready; sleep 3); done
-        while true; do [ "$(kubectl get po -l app=helloworld | grep '2/2')" = "" ] || break && (echo waiting for helloworld app ready; sleep 3); done
-    - name: test connect without Merbridge
-      run: |
-        kubectl exec $(kubectl get po -l app=sleep -o=jsonpath='{..metadata.name}') -c sleep -- curl -s -v helloworld:5000/hello
-    - name: install merbridge
-      run: |
-        nohup go run -exec sudo ./app/main.go -k -m istio -d > mbctl.log &
-        while true; do [ "$(cat mbctl.log | grep 'Pod Watcher Ready')" = "" ] || break && (echo waiting for mbctl watcher ready; sleep 3); done
-    - name: test connect with Merbridge
-      run: |
-        set -x
-        kubectl exec $(kubectl get po -l app=sleep -o=jsonpath='{..metadata.name}') -c sleep -- curl -s -v helloworld:5000/hello
-        sudo cat /sys/kernel/debug/tracing/trace > /tmp/trace-log
-        # check if eBPF works
-        [ "$(sudo cat /tmp/trace-log | grep 'from user container')" = "" ] && (echo eBPF progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 11)
-        [ "$(sudo cat /tmp/trace-log | grep 'bytes with eBPF successfully')" = "" ] && (echo eBPF redirect progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 12)
-        [ "$(sudo cat /tmp/trace-log | grep 'successfully deal DNS redirect query')" = "" ] && (echo DNS Proxy not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 13)
-        sudo rm -f /tmp/trace-log
+    # - name: install istio
+    #   run: |
+    #     cat > /tmp/istio-config <<EOF
+    #     apiVersion: install.istio.io/v1alpha1
+    #     kind: IstioOperator
+    #     spec:
+    #       meshConfig:
+    #         defaultConfig:
+    #           proxyMetadata:
+    #             # Enable basic DNS proxying
+    #             ISTIO_META_DNS_CAPTURE: "true"
+    #             # Enable automatic address allocation, optional
+    #             ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+    #     EOF
+    #     bash ./scripts/install-istio.sh -f /tmp/istio-config
+    #     rm -f /tmp/istio-config
+    # - name: deploy test apps
+    #   run: |
+    #     kubectl label ns default istio-injection=enabled
+    #     kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/sleep/sleep.yaml
+    #     kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/helloworld/helloworld.yaml
+    #     while true; do [ "$(kubectl get po -l app=sleep | grep '2/2')" = "" ] || break && (echo waiting for sleep app ready; sleep 3); done
+    #     while true; do [ "$(kubectl get po -l app=helloworld | grep '2/2')" = "" ] || break && (echo waiting for helloworld app ready; sleep 3); done
+    # - name: test connect without Merbridge
+    #   run: |
+    #     kubectl exec $(kubectl get po -l app=sleep -o=jsonpath='{..metadata.name}') -c sleep -- curl -s -v helloworld:5000/hello
+    # - name: install merbridge
+    #   run: |
+    #     nohup go run -exec sudo ./app/main.go -k -m istio -d > mbctl.log &
+    #     while true; do [ "$(cat mbctl.log | grep 'Pod Watcher Ready')" = "" ] || break && (echo waiting for mbctl watcher ready; sleep 3); done
+    # - name: test connect with Merbridge
+    #   run: |
+    #     set -x
+    #     kubectl exec $(kubectl get po -l app=sleep -o=jsonpath='{..metadata.name}') -c sleep -- curl -s -v helloworld:5000/hello
+    #     sudo cat /sys/kernel/debug/tracing/trace > /tmp/trace-log
+    #     # check if eBPF works
+    #     [ "$(sudo cat /tmp/trace-log | grep 'from user container')" = "" ] && (echo eBPF progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 11)
+    #     [ "$(sudo cat /tmp/trace-log | grep 'bytes with eBPF successfully')" = "" ] && (echo eBPF redirect progs not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 12)
+    #     [ "$(sudo cat /tmp/trace-log | grep 'successfully deal DNS redirect query')" = "" ] && (echo DNS Proxy not work; sudo cat /tmp/trace-log; sudo bpftool prog; sudo bpftool map; cat mbctl.log; sudo ps -ef; exit 13)
+    #     sudo rm -f /tmp/trace-log
