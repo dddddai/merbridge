@@ -4,7 +4,7 @@ CFLAGS=-O2 -g  -Wall -target bpf -I/usr/include/$(shell uname -m)-linux-gnu
 PROG_MOUNT_PATH=/sys/fs/bpf
 
 MACROS:=
-DEBUG ?=
+DEBUG ?= 1
 
 MESH_MODE ?= istio
 
@@ -16,8 +16,8 @@ else
 $(error MESH_MODE $(MESH_MODE) isn't supported)
 endif
 
-ENABLE_IPV4 ?= true
-ENABLE_IPV6 ?= false
+ENABLE_IPV4 ?= false
+ENABLE_IPV6 ?= true
 
 ifeq ($(ENABLE_IPV4),true)
 	MACROS:= $(MACROS) -DENABLE_IPV4=1
