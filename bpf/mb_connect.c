@@ -21,12 +21,7 @@ limitations under the License.
 #include <linux/in.h>
 
 #if ENABLE_IPV4
-struct bpf_elf_map __section("maps") out_ip = {
-    .type = BPF_MAP_TYPE_ARRAY,
-    .size_key = sizeof(__u32),
-    .size_value = sizeof(__u32),
-    .max_elem = 1,
-};
+static __u32 outip = 1;
 
 static inline int udp_connect4(struct bpf_sock_addr *ctx)
 {
@@ -188,13 +183,9 @@ static inline int tcp_connect4(struct bpf_sock_addr *ctx)
             // using 127.0.0.1 directly is to avoid conflicts between the
             // quaternions of different Pods when the quaternions are
             // subsequently processed.
-            __u32 zero = 0;
-            __u32 *outip = bpf_map_lookup_elem(&out_ip, &zero);
-            if (outip) {
-                __u32 dst_ip = __sync_fetch_and_add(outip, 1);
-                dst_ip &= 0xfffff;
-                ctx->user_ip4 = bpf_htonl(0x7f800000 | dst_ip);
-            }
+            __u32 dst_ip = __sync_fetch_and_add(&outip, 1);
+            dst_ip &= 0xfffff;
+            ctx->user_ip4 = bpf_htonl(0x7f800000 | dst_ip);
         }
         ctx->user_port = bpf_htons(OUT_REDIRECT_PORT);
     } else {
