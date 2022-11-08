@@ -103,9 +103,9 @@ __section("classifier_ingress") int mb_tc_ingress(struct __sk_buff *skb)
             return TC_ACT_OK;
         }
         // ingress without mb_connect
-        struct pod_config *pod = bpf_map_lookup_elem(&local_pod_ips, dst_ip);
+        struct pod_config *pod = bpf_map_lookup_elem(&mesh_pod_ips, dst_ip);
         if (!pod) {
-            // dest ip is not on this node or not injected sidecar.
+            // dest ip is not in the mesh or not injected sidecar.
             debugf("tc ingress: pod not found, bypassed");
             return TC_ACT_OK;
         }
