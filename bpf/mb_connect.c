@@ -21,7 +21,7 @@ limitations under the License.
 #include <linux/in.h>
 
 #if ENABLE_IPV4
-static __u32 outip = 1;
+static __u32 outip = 0;
 
 static inline int udp_connect4(struct bpf_sock_addr *ctx)
 {
@@ -184,10 +184,11 @@ static inline int tcp_connect4(struct bpf_sock_addr *ctx)
             // quaternions of different Pods when the quaternions are
             // subsequently processed.
             __u32 dst_ip = __sync_fetch_and_add(&outip, 1);
-            ctx->user_ip4 = bpf_htonl(0x7f800000 | (dst_ip++));
-            if (dst_ip >> 20) {
-                __sync_lock_test_and_set(&outip, 1);
+            if ((++dst_ip) >> 20) {
+                __sync_fetch_and_and(&outip, 0);
+                dst_ip -= 1 << 20;
             }
+            ctx->user_ip4 = bpf_htonl(0x7f800000 | dst_ip);
         }
         ctx->user_port = bpf_htons(OUT_REDIRECT_PORT);
     } else {
