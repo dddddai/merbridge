@@ -27,7 +27,8 @@ jobs:
     - name: install clang12
       run: |
         clang -v
-        sudo apt install clang-12 -y
+        sudo apt-get update
+        sudo apt-get -y install clang-12
     - name: try load and unload
       run: |
         uname -a
