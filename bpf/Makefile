@@ -33,6 +33,15 @@ else
 	MACROS:= $(MACROS) -DENABLE_IPV6=0
 endif
 
+POD_MAP_SIZE ?= 1024
+MACROS:= $(MACROS) -DPOD_MAP_SIZE=$(POD_MAP_SIZE)
+
+USE_ATOMICS ?= 0
+MACROS:= $(MACROS) -DUSE_ATOMICS=$(USE_ATOMICS)
+ifeq ($(USE_ATOMICS),1)
+	CFLAGS:= $(CFLAGS) -mcpu=v3
+endif
+
 # see https://stackoverflow.com/questions/15063298/how-to-check-kernel-version-in-makefile
 KVER = $(shell uname -r)
 KMAJ = $(shell echo $(KVER) | \
@@ -90,8 +99,8 @@ compile-clean:
 load-map-cookie_original_dst:
 	[ -f $(PROG_MOUNT_PATH)/cookie_original_dst ] || sudo bpftool map create $(PROG_MOUNT_PATH)/cookie_original_dst type lru_hash key 8 value 24 entries 65535 name cookie_original_dst
 
-load-map-local_pod_ips:
-	[ -f $(PROG_MOUNT_PATH)/local_pod_ips ] || sudo bpftool map create $(PROG_MOUNT_PATH)/local_pod_ips type hash key 16 value 244 entries 1024 name local_pod_ips
+load-map-mesh_pod_ips:
+	[ -f $(PROG_MOUNT_PATH)/mesh_pod_ips ] || sudo bpftool map create $(PROG_MOUNT_PATH)/mesh_pod_ips type hash key 16 value 244 entries 1024 name mesh_pod_ips
 
 load-map-process_ip:
 	[ -f $(PROG_MOUNT_PATH)/process_ip ] || sudo bpftool map create $(PROG_MOUNT_PATH)/process_ip type lru_hash key 4 value 4 entries 1024 name process_ip
@@ -115,7 +124,7 @@ clean-maps:
 		$(PROG_MOUNT_PATH)/pair_original_dst \
 		$(PROG_MOUNT_PATH)/process_ip \
 		$(PROG_MOUNT_PATH)/cgroup_info_map \
-		$(PROG_MOUNT_PATH)/local_pod_ips \
+		$(PROG_MOUNT_PATH)/mesh_pod_ips \
 		$(PROG_MOUNT_PATH)/cookie_original_dst \
 		$(PROG_MOUNT_PATH)/mark_pod_ips_map
 
@@ -141,10 +150,10 @@ clean-redir:
 	sudo bpftool prog detach pinned $(PROG_MOUNT_PATH)/redir msg_verdict pinned $(PROG_MOUNT_PATH)/sock_pair_map
 	sudo rm $(PROG_MOUNT_PATH)/redir
 
-load-connect: load-map-cookie_original_dst load-map-local_pod_ips load-map-process_ip load-map-cgroup_info_map load-map-mark_pod_ips_map
+load-connect: load-map-cookie_original_dst load-map-mesh_pod_ips load-map-process_ip load-map-cgroup_info_map load-map-mark_pod_ips_map
 	sudo bpftool -m prog loadall mb_connect.o $(PROG_MOUNT_PATH)/connect \
 		map name cookie_original_dst pinned $(PROG_MOUNT_PATH)/cookie_original_dst \
-		map name local_pod_ips pinned $(PROG_MOUNT_PATH)/local_pod_ips \
+		map name mesh_pod_ips pinned $(PROG_MOUNT_PATH)/mesh_pod_ips \
 		map name mark_pod_ips_map pinned $(PROG_MOUNT_PATH)/mark_pod_ips_map \
 		map name process_ip pinned $(PROG_MOUNT_PATH)/process_ip \
 		map name cgroup_info_map pinned $(PROG_MOUNT_PATH)/cgroup_info_map

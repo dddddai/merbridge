@@ -1,18 +1,13 @@
 name: E2E CI
 
 on:
-  # push:
-  #   branches: [ main, test ]
-  pull_request:
-    branches: [ main, test ]
-    types:
-      - '*'
+  push:
 
 jobs:
   istio-e2e:
     runs-on: ubuntu-20.04
     timeout-minutes: 30
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'needs-e2e-test') }}
+    #if: ${{ contains(github.event.pull_request.labels.*.name, 'needs-e2e-test') }}
     env: 
       ISTIO_VERSION: '1.15.2'
       KIND_VERSION: v0.16.0
@@ -33,6 +28,12 @@ jobs:
       run: |
         uname -a
         make load
+        make attach
+        make clean
+    - name: try load and unload with atomics enabled
+      run: |
+        uname -a
+        make load USE_ATOMICS=1
         make attach
         make clean
     - name: install istio
@@ -63,7 +64,7 @@ jobs:
         kubectl exec $(kubectl get po -l app=sleep -o=jsonpath='{..metadata.name}') -c sleep -- curl -s -v helloworld:5000/hello
     - name: install merbridge
       run: |
-        nohup go run -exec sudo ./app/main.go -k -m istio -d > mbctl.log &
+        nohup go run -exec sudo ./app/main.go -m istio -d > mbctl.log &
         while true; do [ "$(cat mbctl.log | grep 'Pod Watcher Ready')" = "" ] || break && (echo waiting for mbctl watcher ready; sleep 3); done
     - name: test connect with Merbridge
       run: |
@@ -221,7 +222,7 @@ jobs:
         kubectl patch deployment example-client --patch '{"spec": {"template": {"metadata": {"annotations": {"kuma.io/container-patches": "disable-init-container"}}}}}'
     - name: install merbridge
       run: |
-        nohup go run -exec sudo ./app/main.go -k -m kuma -d > mbctl.log &
+        nohup go run -exec sudo ./app/main.go -m kuma -d > mbctl.log &
         while true; do [ "$(cat mbctl.log | grep 'Pod Watcher Ready')" = "" ] || break && (echo waiting for mbctl watcher ready; sleep 3); done
     - name: test connect with Merbridge
       run: |

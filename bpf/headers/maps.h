@@ -18,6 +18,10 @@ limitations under the License.
 
 #define TC_ORIGIN_FLAG 0b00001000
 
+#ifndef POD_MAP_SIZE
+#define POD_MAP_SIZE 1024
+#endif
+
 struct bpf_elf_map __section("maps") cookie_original_dst = {
     .type = BPF_MAP_TYPE_LRU_HASH,
     .size_key = sizeof(__u64),
@@ -25,14 +29,14 @@ struct bpf_elf_map __section("maps") cookie_original_dst = {
     .max_elem = 65535,
 };
 
-// local_pods stores Pods' ips in current node.
+// mesh_pods stores Pods' ips in the mesh.
 // which can be set by controller.
 // only contains injected pods.
-struct bpf_elf_map __section("maps") local_pod_ips = {
+struct bpf_elf_map __section("maps") mesh_pod_ips = {
     .type = BPF_MAP_TYPE_HASH,
     .size_key = sizeof(__u32) * 4,
     .size_value = sizeof(struct pod_config),
-    .max_elem = 1024,
+    .max_elem = POD_MAP_SIZE,
     // .pinning = PIN_GLOBAL_NS,
 };
 

@@ -43,8 +43,9 @@ type Watcher struct {
 }
 
 func (w *Watcher) Start() error {
+	// watch all pods if cni is not enabled
 	selectByNode := ""
-	if !config.IsKind {
+	if config.EnableCNI && config.WatchLocalPods {
 		selectByNode = fields.OneTermEqualSelector("spec.nodeName", w.CurrentNodeName).String()
 	}
 	kubeInformerFactory := kubeinformer.NewFilteredSharedInformerFactory(

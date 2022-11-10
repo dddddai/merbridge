@@ -24,19 +24,20 @@ const (
 	ModeIstio       = "istio"
 	ModeLinkerd     = "linkerd"
 	ModeKuma        = "kuma"
-	LocalPodIps     = "/sys/fs/bpf/local_pod_ips"
+	MeshPodIps      = "/sys/fs/bpf/mesh_pod_ips"
 	PairOriginalDst = "/sys/fs/bpf/pair_original_dst"
 )
 
 var (
 	Mode             string
-	IpsFile          string // not used
+	IpsFile          string // deprecated
 	UseReconnect     = true
 	Debug            = false
 	EnableCNI        = false
+	WatchLocalPods   = true
 	EnableIPV4       = getEnvOrDefault("ENABLE_IPV4", "true") == "true"
 	EnableIPV6       = getEnvOrDefault("ENABLE_IPV6", "false") == "true"
-	IsKind           = false // is Kubernetes running in Docker
+	IsKind           = false // is Kubernetes running in Docker, deprecated
 	HostProc         string
 	CNIBinDir        string
 	CNIConfigDir     string

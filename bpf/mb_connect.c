@@ -102,7 +102,7 @@ static inline int tcp_connect4(struct bpf_sock_addr *ctx)
         }
         if (curr_pod_ip) {
             struct pod_config *pod =
-                bpf_map_lookup_elem(&local_pod_ips, _curr_pod_ip);
+                bpf_map_lookup_elem(&mesh_pod_ips, _curr_pod_ip);
             if (pod) {
                 int exclude = 0;
                 IS_EXCLUDE_PORT(pod->exclude_out_ports, ctx->user_port,
@@ -141,7 +141,7 @@ static inline int tcp_connect4(struct bpf_sock_addr *ctx)
                 }
             } else {
                 debugf("current pod ip found(%pI4), but can not find pod_info "
-                       "from local_pod_ips",
+                       "from mesh_pod_ips",
                        &curr_pod_ip);
             }
             // todo port or ipranges ignore.
@@ -179,28 +179,35 @@ static inline int tcp_connect4(struct bpf_sock_addr *ctx)
             ctx->user_ip4 = localhost;
         } else {
             // if we can not get the pod ip, we rewrite the dest address.
-            // The reason we try the IP of the 127.128.0.0/20 segment instead of
+            // The reason we try the IP of the 127.128.0.0/12 segment instead of
             // using 127.0.0.1 directly is to avoid conflicts between the
             // quaternions of different Pods when the quaternions are
             // subsequently processed.
+#if USE_ATOMICS
+            __u32 dst_ip = 0;
+            dst_ip = __sync_fetch_and_add(&outip, 1);
+            dst_ip &= 0xfffff;
+            ctx->user_ip4 = bpf_htonl(0x7f800000 | dst_ip);
+#else
             ctx->user_ip4 = bpf_htonl(0x7f800000 | (outip++));
             if (outip >> 20) {
                 outip = 1;
             }
+#endif
         }
         ctx->user_port = bpf_htons(OUT_REDIRECT_PORT);
     } else {
         // from envoy to others
         __u32 _dst_ip[4];
         set_ipv4(_dst_ip, dst_ip);
-        struct pod_config *pod = bpf_map_lookup_elem(&local_pod_ips, _dst_ip);
+        struct pod_config *pod = bpf_map_lookup_elem(&mesh_pod_ips, _dst_ip);
         if (!pod) {
-            // dst ip is not in this node, bypass
-            debugf("dest ip: %pI4 not in this node, bypass", &dst_ip);
+            // dst ip is not in the mesh, bypass
+            debugf("dest ip: %pI4 not in the mesh, bypass", &dst_ip);
             return 1;
         }
 
-        // dst ip is in this node, but not the current pod,
+        // dst ip is in the mesh, but not the current pod,
         // it is envoy to envoy connecting.
         struct origin_info origin;
         memset(&origin, 0, sizeof(origin));
@@ -232,7 +239,7 @@ static inline int tcp_connect4(struct bpf_sock_addr *ctx)
             }
             origin.flags |= 1;
         } else {
-            // can not get current pod ip, we use the lagecy mode.
+            // can not get current pod ip, we use the legacy mode.
 
             // u64 bpf_get_current_pid_tgid(void)
             // Return A 64-bit integer containing the current tgid and
@@ -382,12 +389,12 @@ static inline int tcp_connect6(struct bpf_sock_addr *ctx)
         ctx->user_port = bpf_htons(OUT_REDIRECT_PORT);
     } else {
         // from envoy to others
-        if (!bpf_map_lookup_elem(&local_pod_ips, dst_ip)) {
-            // dst ip is not in this node, bypass
-            debugf("dest ip: %pI6c not in this node, bypass", dst_ip);
+        if (!bpf_map_lookup_elem(&mesh_pod_ips, dst_ip)) {
+            // dst ip is not in the mesh, bypass
+            debugf("dest ip: %pI6c not in the mesh, bypass", dst_ip);
             return 1;
         }
-        // dst ip is in this node, but not the current pod,
+        // dst ip is in the mesh, but not the current pod,
         // it is envoy to envoy connecting.
         struct origin_info origin;
         memset(&origin, 0, sizeof(origin));

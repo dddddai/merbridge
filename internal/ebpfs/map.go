@@ -25,13 +25,13 @@ import (
 )
 
 var (
-	localPodIpsMap   *ebpf.Map
+	meshPodIpsMap    *ebpf.Map
 	pairOriginIpsMap *ebpf.Map
 )
 
 func InitLoadPinnedMap() error {
 	var err error
-	localPodIpsMap, err = ebpf.LoadPinnedMap(config.LocalPodIps, &ebpf.LoadPinOptions{})
+	meshPodIpsMap, err = ebpf.LoadPinnedMap(config.MeshPodIps, &ebpf.LoadPinOptions{})
 	if err != nil {
 		return fmt.Errorf("load map error: %v", err)
 	}
@@ -42,15 +42,15 @@ func InitLoadPinnedMap() error {
 	return nil
 }
 
-func GetLocalIPMap() *ebpf.Map {
-	if localPodIpsMap == nil {
+func GetMeshPodsMap() *ebpf.Map {
+	if meshPodIpsMap == nil {
 		_ = InitLoadPinnedMap()
 	}
-	return localPodIpsMap
+	return meshPodIpsMap
 }
 
 func GetPairOriginalMap() *ebpf.Map {
-	if localPodIpsMap == nil {
+	if meshPodIpsMap == nil {
 		_ = InitLoadPinnedMap()
 	}
 	return pairOriginIpsMap

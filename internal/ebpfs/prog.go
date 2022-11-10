@@ -110,7 +110,7 @@ func initTCProgs() error {
 	ps := progs{}
 	err = coll.LoadAndAssign(&ps, &ebpf.CollectionOptions{
 		MapReplacements: map[string]*ebpf.Map{
-			"local_pod_ips":     GetLocalIPMap(),
+			"mesh_pod_ips":      GetMeshPodsMap(),
 			"pair_original_dst": GetPairOriginalMap(),
 		},
 	})
