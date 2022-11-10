@@ -5,7 +5,7 @@ on:
 
 jobs:
   istio-e2e:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     #if: ${{ contains(github.event.pull_request.labels.*.name, 'needs-e2e-test') }}
     env: 
@@ -24,6 +24,9 @@ jobs:
     - name: setup kind cluster
       run: |
         ./scripts/setup-kind.sh
+    - name: install clang12
+      run: |
+        sudo apt install clang-12 -y
     - name: try load and unload
       run: |
         uname -a

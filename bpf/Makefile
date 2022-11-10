@@ -38,8 +38,8 @@ MACROS:= $(MACROS) -DPOD_MAP_SIZE=$(POD_MAP_SIZE)
 
 USE_ATOMICS ?= 0
 MACROS:= $(MACROS) -DUSE_ATOMICS=$(USE_ATOMICS)
-# ifeq ($(USE_ATOMICS),1)
-# 	CFLAGS:= $(CFLAGS) -mcpu=v3
+# ifeq ($(ENABLE_IPV4),1)
+# 	CFLAGS:= $(CFLAGS)
 # endif
 
 # see https://stackoverflow.com/questions/15063298/how-to-check-kernel-version-in-makefile
