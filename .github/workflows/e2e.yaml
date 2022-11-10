@@ -18,14 +18,15 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.19
-    - name: install bpftool
-      run: |
-        sudo bash ./scripts/build-bpftool.sh
-    - name: setup kind cluster
-      run: |
-        ./scripts/setup-kind.sh
+    # - name: install bpftool
+    #   run: |
+    #     sudo bash ./scripts/build-bpftool.sh
+    # - name: setup kind cluster
+    #   run: |
+    #     ./scripts/setup-kind.sh
     - name: install clang12
       run: |
+        clang -v
         sudo apt install clang-12 -y
     - name: try load and unload
       run: |
