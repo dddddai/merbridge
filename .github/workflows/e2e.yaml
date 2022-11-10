@@ -5,7 +5,7 @@ on:
 
 jobs:
   istio-e2e:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     #if: ${{ contains(github.event.pull_request.labels.*.name, 'needs-e2e-test') }}
     env: 
