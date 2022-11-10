@@ -29,6 +29,8 @@ jobs:
         clang -v
         sudo apt-get update
         sudo apt-get -y install clang-12 --reinstall
+        clang -v
+        sudo apt install llvm-12 -y
     - name: try load and unload
       run: |
         uname -a
