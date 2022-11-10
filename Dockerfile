@@ -1,6 +1,6 @@
 # set default platform for docker build
 ARG BUILDPLATFORM=linux/amd64
-FROM --platform=$BUILDPLATFORM ubuntu:20.04 as compiler
+FROM --platform=$BUILDPLATFORM ubuntu:22.04 as compiler
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags "-s -w" -o ./dist/mbctl 
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags "-s -w" -o ./dist/merbridge-cni ./app/cni/main.go
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags "-s -w" -o ./dist/merbridge-fd-back ./app/fd-back/main.go
 
-FROM --platform=$BUILDPLATFORM ubuntu:20.04
+FROM --platform=$BUILDPLATFORM ubuntu:22.04
 
 WORKDIR /app
 

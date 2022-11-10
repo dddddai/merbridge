@@ -29,10 +29,21 @@ jobs:
     - name: setup kind cluster
       run: |
         ./scripts/setup-kind.sh
+    - name: Set up Clang
+      uses: egor-tensin/setup-clang@v1
+      with:
+        version: 12
+        platform: x64
     - name: try load and unload
       run: |
         uname -a
         make load
+        make attach
+        make clean
+    - name: try load and unload with atomics enabled
+      run: |
+        uname -a
+        make load USE_ATOMICS=1
         make attach
         make clean
     - name: install istio
@@ -63,7 +74,7 @@ jobs:
         kubectl exec $(kubectl get po -l app=sleep -o=jsonpath='{..metadata.name}') -c sleep -- curl -s -v helloworld:5000/hello
     - name: install merbridge
       run: |
-        nohup go run -exec sudo ./app/main.go -k -m istio -d > mbctl.log &
+        nohup go run -exec sudo ./app/main.go -m istio -d > mbctl.log &
         while true; do [ "$(cat mbctl.log | grep 'Pod Watcher Ready')" = "" ] || break && (echo waiting for mbctl watcher ready; sleep 3); done
     - name: test connect with Merbridge
       run: |
@@ -221,7 +232,7 @@ jobs:
         kubectl patch deployment example-client --patch '{"spec": {"template": {"metadata": {"annotations": {"kuma.io/container-patches": "disable-init-container"}}}}}'
     - name: install merbridge
       run: |
-        nohup go run -exec sudo ./app/main.go -k -m kuma -d > mbctl.log &
+        nohup go run -exec sudo ./app/main.go -m kuma -d > mbctl.log &
         while true; do [ "$(cat mbctl.log | grep 'Pod Watcher Ready')" = "" ] || break && (echo waiting for mbctl watcher ready; sleep 3); done
     - name: test connect with Merbridge
       run: |

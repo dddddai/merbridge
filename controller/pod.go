@@ -120,16 +120,16 @@ func addFunc(obj interface{}) {
 	log.Debugf("got pod updated %s/%s", pod.Namespace, pod.Name)
 
 	_ip, _ := linux.IP2Linux(pod.Status.PodIP)
-	log.Infof("update local_pod_ips with ip: %s", pod.Status.PodIP)
+	log.Infof("update mesh_pod_ips with ip: %s", pod.Status.PodIP)
 	p := podConfig{}
 	if config.Mode == config.ModeKuma {
 		parsePodConfigFromAnnotationsKuma(pod.Annotations, &p)
 	} else {
 		parsePodConfigFromAnnotations(pod.Annotations, &p)
 	}
-	err := ebpfs.GetLocalIPMap().Update(_ip, &p, ebpf.UpdateAny)
+	err := ebpfs.GetMeshPodsMap().Update(_ip, &p, ebpf.UpdateAny)
 	if err != nil {
-		log.Errorf("update local_pod_ips %s error: %v", pod.Status.PodIP, err)
+		log.Errorf("update mesh_pod_ips %s error: %v", pod.Status.PodIP, err)
 	}
 }
 
@@ -302,6 +302,6 @@ func deleteFunc(obj interface{}) {
 	if pod, ok := obj.(*v1.Pod); ok {
 		log.Debugf("got pod delete %s/%s", pod.Namespace, pod.Name)
 		_ip, _ := linux.IP2Linux(pod.Status.PodIP)
-		_ = ebpfs.GetLocalIPMap().Delete(_ip)
+		_ = ebpfs.GetMeshPodsMap().Delete(_ip)
 	}
 }
