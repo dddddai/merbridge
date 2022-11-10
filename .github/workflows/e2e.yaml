@@ -18,12 +18,12 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.19
-    # - name: install bpftool
-    #   run: |
-    #     sudo bash ./scripts/build-bpftool.sh
-    # - name: setup kind cluster
-    #   run: |
-    #     ./scripts/setup-kind.sh
+    - name: install bpftool
+      run: |
+        sudo bash ./scripts/build-bpftool.sh
+    - name: setup kind cluster
+      run: |
+        ./scripts/setup-kind.sh
     - name: Set up Clang
       uses: egor-tensin/setup-clang@v1
       with:

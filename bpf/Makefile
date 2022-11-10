@@ -38,9 +38,9 @@ MACROS:= $(MACROS) -DPOD_MAP_SIZE=$(POD_MAP_SIZE)
 
 USE_ATOMICS ?= 0
 MACROS:= $(MACROS) -DUSE_ATOMICS=$(USE_ATOMICS)
-# ifeq ($(ENABLE_IPV4),1)
-# 	CFLAGS:= $(CFLAGS)
-# endif
+ifeq ($(USE_ATOMICS),1)
+	CFLAGS:= $(CFLAGS) -mcpu=v3
+endif
 
 # see https://stackoverflow.com/questions/15063298/how-to-check-kernel-version-in-makefile
 KVER = $(shell uname -r)
@@ -85,7 +85,7 @@ init-bpffs:
 	sudo mkdir -p /sys/fs/bpf/tc/globals
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(MACROS) -c $< -o $@ -mcpu=v3
+	$(CC) $(CFLAGS) $(MACROS) -c $< -o $@
 
 generate-compilation-database:
 	CC="$(CC)" CFLAGS="$(CFLAGS)" MACROS="$(MACROS)" scripts/generate-compilation-database.sh | tee compile_commands.json
